@@ -1,7 +1,7 @@
 import * as React from "react";
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import * as ReactDOM from "react-dom";
-import {Routes, Route, Link, BrowserRouter} from "react-router-dom";
+import {Routes, Route, Link, BrowserRouter, useNavigate} from "react-router-dom";
 
 
 
@@ -29,7 +29,17 @@ function FrontPage() {
     </div>
 }
 
-function ListMovies({movies}) {
+function ListMovies({moviesApi}) {
+    const [movies, setMovies] = useState();
+    useEffect(async () => {
+        setMovies(undefined);
+        setMovies(await moviesApi.listMovies());
+    }, []);
+
+    if (!movies) {
+        return <div>Loading...</div>
+    }
+
     return <div>
         <h1>List movies</h1>
 
@@ -42,14 +52,21 @@ function ListMovies({movies}) {
     </div>;
 }
 
-function NewMovie() {
+/* For å legge til ny film */
+/* useNavigate() verdi for å navigere i sidene */
+function NewMovie({moviesApi}) {
     const [title, setTitle] = useState("");
     const [year, setYear] = useState("");
     const [plot, setPlot] = useState("");
 
-    function handleSubmit(e) {
+    const navigate = useNavigate();
+
+    /* push for å pushe moviesene til list movies via handleSubmit. */
+    /* For å komme til hovedsiden med navigate ("/") */
+    async function handleSubmit(e) {
         e.preventDefault();
-        MOVIES.push({title, year, plot});
+        await moviesApi.onAddMovie({title, year, plot});
+        navigate("/");
     }
 
     return <form onSubmit={handleSubmit}>
@@ -70,16 +87,24 @@ function NewMovie() {
     </form>
 }
 
+/* For å linke sidene */
 function Application() {
+    const moviesApi = {
+        onAddMovie: async (m) => MOVIES.push(m),
+        listMovies: async () => MOVIES
+    }
+
     return <BrowserRouter>
         <Routes>
             <Route path="/" element={<FrontPage />} />
-            <Route path="/movies" element={<ListMovies movies={MOVIES}/>} />
-            <Route path="/movies/new" element={<NewMovie/>} />
+            <Route path="/movies" element={<ListMovies moviesApi={moviesApi}/>} />
+            <Route path="/movies/new" element={<NewMovie moviesApi={moviesApi}/>} />
         </Routes>
     </BrowserRouter>;
 }
 
+
+/* Henter app i index.html */
 ReactDOM.render(
     <Application/>,
     document.getElementById("app")
